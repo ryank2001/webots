@@ -15,13 +15,13 @@ The robot position is a JSON object with the following structure:
     "robot_name": <robot_id>,
     "x": <x>,
     "y": <y>,
-    "obstacles": [
+    "obstacles": {
         {
             "x": <x>,
             "y": <y>,
         },
         ...
-    ]
+    }
     
     
 }
