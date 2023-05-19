@@ -12,7 +12,7 @@ The robot position is a JSON object with the following structure:
 ```
 {
     "type": "robot_position",
-    "robot_id": <robot_id>,
+    "robot_name": <robot_id>,
     "x": <x>,
     "y": <y>,
     "obstacles": [
@@ -33,7 +33,7 @@ The stop command is a JSON object with the following structure:
 ```
 {
     "type": "stop",
-    "robot_id": <robot_id>
+    "robot_name": <robot_id>
 }
 ```
 
@@ -42,7 +42,8 @@ If the robot wants to connect to the server it will send a JSON object with the 
 ```
 {
     "type": "connect",
-    "robot_id": <robot_id>
+    "fake" : true, 
+    "robot_name": <robot_id>
 }
 ```
 
@@ -56,7 +57,7 @@ The target position is a JSON object with the following structure:
 ```
 {
     "type": "target_position",
-    "robot_id": <robot_id>,
+    "robot_name": <robot_id>,
     "x": <x>,
     "y": <y>
 }
