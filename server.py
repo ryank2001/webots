@@ -3,6 +3,7 @@
 import asyncio
 import json
 import websockets
+from aStar import aStarSearch
 
 gridHeight = 10
 gridWidth = 10
@@ -10,7 +11,7 @@ grid = [[0 for i in range(gridHeight)] for j in range(gridWidth)]
 robots = {}
 clones = {}
 gui = {}
-targets = {'MEGA RAT' : {"pos" : [8,8]}}
+targets = {'MEGA RAT' : {"pos" : [9,9]}}
 
 
 def connect(json, websocket):
@@ -51,16 +52,9 @@ def calculate_path(robotName):
     currentPos = clones[robotName]["pos"]
     targetPos = targets[robotName]["pos"]
 
-    if currentPos[0] < targetPos[0]:
-        currentPos[0] += 1
-    elif currentPos[0] > targetPos[0]:
-        currentPos[0] -= 1
+    return aStarSearch(grid, currentPos, targetPos)
 
-    elif currentPos[1] < targetPos[1]:
-        currentPos[1] += 1
-    elif currentPos[1] > targetPos[1]:
-        currentPos[1] -= 1
-    return currentPos
+    
     
 
 async def get_robot_position(websocket, data):
@@ -76,10 +70,11 @@ async def get_robot_position(websocket, data):
             
             for obstacle in obstacles:
                 print(obstacle)
-                if obstacle["x"] < 0 or obstacle["y"] < 0:
-                    grid[int(obstacle["x"])][int(obstacle["y"])] = 1
+                if obstacle["x"] >= 0 or obstacle["y"] >= 0:
+                    if obstacle["x"] < gridWidth  and obstacle["y"] < gridHeight:
+                        grid[int(obstacle["x"])][int(obstacle["y"])] = 1
             
-            print("robot "+ str(Name) +  " is at position " + str(x) + "," + str(y))
+            
             newPos = calculate_path(Name)
 
             jsonData = {
