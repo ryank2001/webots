@@ -14,7 +14,7 @@ gui = {}
 targets = {'MEGA RAT' : {"pos" : [9,9]}}
 
 
-def connect(json, websocket):
+async def connect(json_data, websocket):
     ''' 
     This function is called when a robot tries to first connect to the server.
     It checks or the robot is a actual robot or a clone in Webots and saves the connection.
@@ -27,14 +27,21 @@ def connect(json, websocket):
         None
     '''
     try:
-        id = json["robot_name"]
-        fake = json["fake"]
+        id = json_data["robot_name"]
+        fake = json_data["fake"]
         if fake:
             clones[id] = {'connection' : websocket}
             print("clone "+ str(id) +  " connected to the api")
         else:
             robots[id] = {'connection' : websocket}
             print("robot "+ str(id) +  " connected to the api")
+            jsonData = {
+                "type": "target_position",
+                "robot_name": "MEGA RAT",
+                "x": 4,
+                "y": 12
+            }
+            await websocket.send(json.dumps(jsonData))
     except KeyError:
         print("invalid connect")
 
@@ -104,7 +111,7 @@ async def handler(websocket):
        
 
         if json_data["type"] == "connect":
-            connect(json_data, websocket)
+            await connect(json_data, websocket)
 
         elif json_data["type"] == "robot_position":
             await get_robot_position(websocket, json_data)
