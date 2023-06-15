@@ -90,6 +90,8 @@ async def get_robot_position(websocket, data):
                 "x": newPos[0],
                 "y": newPos[1]
             }
+            if robots[Name] != None:
+                await robots[Name]["connection"].send(json.dumps(jsonData))
 
             await websocket.send(json.dumps(jsonData))
     except KeyError:
@@ -118,7 +120,8 @@ async def handler(websocket):
 
         elif json_data["type"] == "stop":
             for robot in robots:
-                robot["connection"].send(json.dumps({"type": "stop"}))
+                await robots[robot]["connection"].send(json.dumps({"type": "stop"}))
+                
         
         
 
