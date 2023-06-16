@@ -4,6 +4,8 @@ import asyncio
 import json
 import websockets
 from aStar import aStarSearch
+import random
+from time import sleep
 
 gridHeight = 10
 gridWidth = 10
@@ -11,8 +13,20 @@ grid = [[0 for i in range(gridHeight)] for j in range(gridWidth)]
 robots = {}
 clones = {}
 gui = {}
-targets = {'MEGA RAT' : {"pos" : [9,9]}}
+targets = [[4,9], [4,9]]
+stop = [0]
 
+
+
+def calc_targets():
+    counter = 0
+    for clone in clones:
+        target = targets[counter]
+        counter +=1
+        clones[clone]["target"] = target
+    
+        
+            
 
 async def connect(json_data, websocket):
     ''' 
@@ -28,25 +42,31 @@ async def connect(json_data, websocket):
     '''
     try:
         id = json_data["robot_name"]
+        try:
+            test = json_data["gui"]
+            if test:
+                gui[id] = {'connection' : websocket}
+                print("gui connected to the api")
+                return
+
+        except KeyError:
+            pass
         fake = json_data["fake"]
         if fake:
-            clones[id] = {'connection' : websocket}
+            x = json_data["x"]
+            y = json_data["y"]
+            clones[id] = {'connection' : websocket, 'pos' : [x,y], 'next' : [0,0], 'target' : [0,0]}
+            calc_targets()
             print("clone "+ str(id) +  " connected to the api")
         else:
             robots[id] = {'connection' : websocket}
             print("robot "+ str(id) +  " connected to the api")
-            jsonData = {
-                "type": "target_position",
-                "robot_name": "MEGA RAT",
-                "x": 4,
-                "y": 12
-            }
-            await websocket.send(json.dumps(jsonData))
     except KeyError:
         print("invalid connect")
 
 
 def calculate_path(robotName):
+    
     '''
     This function calculates the next position for a robot to move to.
 
@@ -57,14 +77,24 @@ def calculate_path(robotName):
         list: The next position for the robot to move to in the form [x,y].
     '''
     currentPos = clones[robotName]["pos"]
-    targetPos = targets[robotName]["pos"]
+    targetPos = clones[robotName]["target"]
+    target = aStarSearch(grid, currentPos, targetPos)
 
-    return aStarSearch(grid, currentPos, targetPos)
+    for clone in clones:
+        if clones[clone]["next"] == target:
+            target = currentPos
+        if clones[clone]["pos"] == target:
+            if clones[clone]["next"] == currentPos:
+                calc_targets()
+            target = currentPos
+
+    return target
 
     
     
 
 async def get_robot_position(websocket, data):
+   
     try:
         print(data)
         Name = data["robot_name"]
@@ -72,17 +102,23 @@ async def get_robot_position(websocket, data):
         x = data["x"]
         y = data["y"]
         
+        for users in gui:
+            await gui[users]["connection"].send(json.dumps(data))
+
         if websocket == clones[Name]["connection"]:
             clones[Name]["pos"] = [x,y]
             
             for obstacle in obstacles:
-                print(obstacle)
-                if obstacle["x"] >= 0 or obstacle["y"] >= 0:
-                    if obstacle["x"] < gridWidth  and obstacle["y"] < gridHeight:
+                obx = int(obstacle["x"])
+                oby = int(obstacle["y"])
+                if obx >= 0 and oby >= 0:
+                    if obx < gridWidth  and oby < gridHeight:
+                        print(str(obx) + "test"+ str(oby))
                         grid[int(obstacle["x"])][int(obstacle["y"])] = 1
             
             
             newPos = calculate_path(Name)
+            clones[Name]["next"] = newPos
 
             jsonData = {
                 "type": "target_position",
@@ -90,12 +126,16 @@ async def get_robot_position(websocket, data):
                 "x": newPos[0],
                 "y": newPos[1]
             }
-            if robots[Name] != None:
-                await robots[Name]["connection"].send(json.dumps(jsonData))
+            
+            try:
+                if robots[Name]:
+                    await robots[Name]["connection"].send(json.dumps(jsonData))
+            except KeyError:
+                pass
 
             await websocket.send(json.dumps(jsonData))
     except KeyError:
-        print(KeyError)
+        
         print("invalid get_robot_position")
 
 
@@ -103,6 +143,8 @@ async def get_robot_position(websocket, data):
 
 async def handler(websocket):
     print("new connection")
+    
+    
     while True:
         try:
             message = await websocket.recv()
@@ -115,12 +157,18 @@ async def handler(websocket):
         if json_data["type"] == "connect":
             await connect(json_data, websocket)
 
-        elif json_data["type"] == "robot_position":
-            await get_robot_position(websocket, json_data)
+        elif json_data["type"] == "robot_position": 
+            if stop[0] == 0:
+                await get_robot_position(websocket, json_data)
 
         elif json_data["type"] == "stop":
-            for robot in robots:
-                await robots[robot]["connection"].send(json.dumps({"type": "stop"}))
+            print("stop")
+            if stop[0] == 0:
+                stop[0] += 1
+            else:
+                stop[0] -= 1
+            
+            
                 
         
         

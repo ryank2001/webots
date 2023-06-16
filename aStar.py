@@ -112,20 +112,8 @@ def aStarSearch(grid, start , end):
 
     if foundDest == False:
         print("Failed to find the destination cell")
-    return
+    return start
     
 
 
-if __name__ == "__main__":
-    
-    grid = [[0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0]]
-    
 
-    start = [0, 0]
-    end = [4, 4]
-
-    print(aStarSearch(grid, start, end))
